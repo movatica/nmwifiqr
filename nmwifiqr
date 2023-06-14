@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# list stored wifi connections
+connections="$(nmcli -t -f NAME,UUID,TYPE con show | grep ':802-11-wireless$')"
+numconns=$(wc -l <<< "$connections")
+
+echo "Saved connections:"
+cut -d: -f1 <<< "$connections" | nl
+echo 
+
+# select one to print
+while true; do
+    read -p "Select index [1..$numconns]: " nr
+    
+    if [[ $nr =~ ^[0-9]+$ ]] && [ $nr -ge 1 ] && [ $nr -le $numconns ]; then
+        break
+    fi
+done
+
+# fetch security details
+uuid=$(cut -d: -f2 <<< "$connections" | tail -n+$nr | head -1)
+details=$(nmcli -s -t -f 802-11-wireless.ssid,802-11-wireless-security.psk con show $uuid | cut -d: -f2)
+ssid=$(head -1 <<< "$details")
+psk=$(tail -1 <<< "$details")
+
+# output qrcode together with ssid
+echo
+qrencode -t utf8 "WIFI:S:${ssid};T:WPA;P:${psk};;"
+echo "$ssid"
