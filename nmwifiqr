@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # list stored wifi connections
 connections="$(nmcli -t -f NAME,UUID,TYPE con show | grep ':802-11-wireless$')"
 numconns=$(wc -l <<< "$connections")
@@ -10,16 +12,16 @@ echo
 
 # select one to print
 while true; do
-    read -p "Select index [1..$numconns]: " nr
+    read -rp "Select index [1..$numconns]: " nr
     
-    if [[ $nr =~ ^[0-9]+$ ]] && [ $nr -ge 1 ] && [ $nr -le $numconns ]; then
+    if [[ $nr =~ ^[0-9]+$ ]] && (( 1 <= nr && nr <= numconns )); then
         break
     fi
 done
 
 # fetch security details
-uuid=$(cut -d: -f2 <<< "$connections" | tail -n+$nr | head -1)
-details=$(nmcli -s -t -f 802-11-wireless.ssid,802-11-wireless-security.psk con show $uuid | cut -d: -f2)
+uuid=$(cut -d: -f2 <<< "$connections" | tail -n+"$nr" | head -1)
+details=$(nmcli -s -t -f 802-11-wireless.ssid,802-11-wireless-security.psk con show "$uuid" | cut -d: -f2)
 ssid=$(head -1 <<< "$details")
 psk=$(tail -1 <<< "$details")
 
